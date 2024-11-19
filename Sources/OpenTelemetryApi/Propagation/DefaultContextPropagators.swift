@@ -35,6 +35,19 @@ public struct DefaultContextPropagators: ContextPropagators {
         }
     }
 
+    public mutating func addTextMapBaggagePropagator(textFormat: TextMapBaggagePropagator) {
+        if textMapBaggagePropagator is NoopBaggagePropagator {
+            textMapBaggagePropagator = textFormat
+        } else if var multiFormat = textMapBaggagePropagator as? MultiTextMapBaggagePropagator {
+            multiFormat.textPropagators.append(textFormat)
+        } else {
+            textMapBaggagePropagator = MultiTextMapBaggagePropagator(textPropagators: [textMapBaggagePropagator])
+            if var multiFormat = textMapBaggagePropagator as? MultiTextMapBaggagePropagator {
+                multiFormat.textPropagators.append(textFormat)
+            }
+        }
+    }
+
     struct MultiTextMapPropagator: TextMapPropagator {
         public var fields: Set<String>
         var textPropagators = [TextMapPropagator]()
