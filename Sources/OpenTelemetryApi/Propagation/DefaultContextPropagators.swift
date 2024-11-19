@@ -78,6 +78,38 @@ public struct DefaultContextPropagators: ContextPropagators {
         }
     }
 
+    struct MultiTextMapBaggagePropagator: TextMapBaggagePropagator {
+        public var fields: Set<String>
+        var textPropagators = [TextMapBaggagePropagator]()
+
+        init(textPropagators: [TextMapBaggagePropagator]) {
+            self.textPropagators = textPropagators
+            fields = MultiTextMapBaggagePropagator.getAllFields(textPropagators: self.textPropagators)
+        }
+
+        private static func getAllFields(textPropagators: [TextMapBaggagePropagator]) -> Set<String> {
+            var fields = Set<String>()
+            textPropagators.forEach {
+                fields.formUnion($0.fields)
+            }
+            return fields
+        }
+
+        public func inject<S>(baggage: Baggage, carrier: inout [String : String], setter: S) where S : Setter {
+            textPropagators.forEach {
+                $0.inject(baggage: baggage, carrier: &carrier, setter: setter)
+            }
+        }
+
+        public func extract<G>(carrier: [String : String], getter: G) -> Baggage? where G : Getter {
+            var baggage: Baggage?
+            textPropagators.forEach {
+                baggage = $0.extract(carrier: carrier, getter: getter)
+            }
+            return baggage
+        }
+    }
+
     struct NoopBaggagePropagator: TextMapBaggagePropagator {
 
         public var fields = Set<String>()
